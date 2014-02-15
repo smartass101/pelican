@@ -14,6 +14,7 @@ from collections import defaultdict
 from functools import partial
 from itertools import chain, groupby
 from operator import attrgetter, itemgetter
+from multiprocessing import Pool
 
 from jinja2 import (Environment, FileSystemLoader, PrefixLoader, ChoiceLoader,
                     BaseLoader, TemplateNotFound)
@@ -72,6 +73,15 @@ class Generator(object):
         # get custom Jinja filters from user settings
         custom_filters = self.settings['JINJA_FILTERS']
         self.env.filters.update(custom_filters)
+
+        # parallel io
+        workers = self.settings['GENERATOR_PARALLEL_WORKERS']
+        if workers == 1:
+            self._worker_pool = None
+        elif workers == 0:
+            self._worker_pool = Pool()    # uses all cpus
+        else:
+            self._worker_pool = Pool(workers)
 
         signals.generator_init.send(self)
 
@@ -146,6 +156,18 @@ class Generator(object):
             if hasattr(value, 'items'):
                 value = list(value.items())  # py3k safeguard for iterators
             self.context[item] = value
+
+
+    def _map(self, func, iterable):
+        """A modified map function that can map in parallel
+
+        if configured to process in parallel, uses the _worker_pool
+        else uses the standard map function
+        """
+        if self._worker_pool is None:
+            return map(func, iterable)
+        else:
+            return self._worker_pool.map(func, iterable)
 
 
 class _FileLoader(BaseLoader):
@@ -268,11 +290,12 @@ class ArticlesGenerator(Generator):
 
     def generate_articles(self, write):
         """Generate the articles."""
-        for article in chain(self.translations, self.articles):
+        def _write_function(article):
             signals.article_generator_write_article.send(self, content=article)
             write(article.save_as, self.get_template(article.template),
                   self.context, article=article, category=article.category,
                   override_output=hasattr(article, 'override_save_as'))
+        self._map(_write_function, chain(self.translations, self.articles))
 
     def generate_period_archives(self, write):
         """Generate per-year, per-month, and per-day archives."""

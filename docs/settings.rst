@@ -170,6 +170,10 @@ Setting name (default value)                                                    
 `SLUGIFY_SOURCE` (``'input'``)                                                   Specifies where you want the slug to be automatically generated
                                                                                  from. Can be set to 'title' to use the 'Title:' metadata tag or
                                                                                  'basename' to use the articles basename when creating the slug.
+`GENERATOR_PARALLEL_WORKERS` (``1``)                                             Number of worker processes the generators can use for 
+                                                                                 e.g. IO (reading or writing content).
+                                                                                 If ``1``, does not do IO in parallel at all. If ``0``, uses as many
+										 worker processes as there are available logical CPUs in the system.
 ===============================================================================  =====================================================================
 
 .. [#] Default is the system locale.
