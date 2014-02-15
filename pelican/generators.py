@@ -14,7 +14,7 @@ from collections import defaultdict
 from functools import partial
 from itertools import chain, groupby
 from operator import attrgetter, itemgetter
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 from jinja2 import (Environment, FileSystemLoader, PrefixLoader, ChoiceLoader,
                     BaseLoader, TemplateNotFound)
@@ -73,15 +73,6 @@ class Generator(object):
         # get custom Jinja filters from user settings
         custom_filters = self.settings['JINJA_FILTERS']
         self.env.filters.update(custom_filters)
-
-        # parallel io
-        workers = self.settings['GENERATOR_PARALLEL_WORKERS']
-        if workers == 1:
-            self._worker_pool = None
-        elif workers == 0:
-            self._worker_pool = Pool()    # uses all cpus
-        else:
-            self._worker_pool = Pool(workers)
 
         signals.generator_init.send(self)
 
@@ -164,10 +155,13 @@ class Generator(object):
         if configured to process in parallel, uses the _worker_pool
         else uses the standard map function
         """
-        if self._worker_pool is None:
+        workers = self.settings['GENERATOR_PARALLEL_WORKERS']
+        if workers == 1:
             return map(func, iterable)
         else:
-            return self._worker_pool.map(func, iterable)
+            workers = cpu_count() if workers == 0 else workers
+            worker_pool = Pool(processes=workers)
+            return worker_pool.map(func, iterable)
 
 
 class _FileLoader(BaseLoader):
