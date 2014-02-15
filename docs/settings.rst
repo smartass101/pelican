@@ -682,6 +682,56 @@ adding the following to your configuration::
 
     CSS_FILE = "wide.css"
 
+.. _generate_only_modified:
+
+Generating only modified content
+================================
+
+To speed up the build process, pelican can optionally generate only
+pages with changed content.
+
+When Pelican is about to read some content source file:
+
+1. The hash or modification time information for the file from a
+   previous build are loaded from a cache file.  These files are
+   stored in the `CACHE_DIRECTORY` directory.  If the file has no
+   record in the cache file, it is read as usual.
+2. The file is checked according to `CHECK_MODIFIED_METHOD`:
+    - If set to ``'mtime'``, the modification time of the file is
+      checked.
+    - If set to a name of a function provided by the ``hashlib``
+    module, e.g. ``'md5'``, the file hash is checked.
+    - If set to anything else or the necessary information about the
+      file cannot be found in the cache file, the content is read as
+      usual.
+3. If the file is considered unchanged, the content object saved in a
+   previous build corresponding to the file is loaded from the cache
+   and the file is not read.
+4. If the file is considered changed, the file is read and the new
+   modification information and the content object are saved to the
+   cache.
+
+When Pelican is about to write some content:
+
+1. For the given output name, the local context dictionary that was
+   passed to the template in the previous build is loaded from the
+   cache.
+2. If the previous context is the same as the new one, no file is
+   written.
+3. Else the file is written as usual and the new template context is
+   saved.
+
+Modification time based checking is faster than comparing file hashes,
+but is not as reliable, because mtime information can be lost when
+e.g. copying the content sources using the ``cp`` or ``rsync``
+commands without the mtime preservation mode (invoked e.g. by
+``--archive``).
+
+The cache files are Python pickles, so they may not be readable by
+different versions of Python as the pickle format often changes. If
+such an error is encountered, the cache files have to be removed and
+new ones created by generating the whole site.
+
 Example settings
 ================
 
