@@ -116,7 +116,9 @@ DEFAULT_CONFIG = {
     'IGNORE_FILES': ['.#*'],
     'SLUG_SUBSTITUTIONS': (),
     'INTRASITE_LINK_REGEX': '[{|](?P<what>.*?)[|}]',
-    'SLUGIFY_SOURCE': 'title'
+    'SLUGIFY_SOURCE': 'title',
+    'CACHE_DIRECTORY': 'cache',
+    'CHECK_MODIFIED_METHOD': 'mtime',
     }
 
 PYGMENTS_RST_OPTIONS = None
