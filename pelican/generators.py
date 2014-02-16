@@ -8,6 +8,8 @@ import logging
 import shutil
 import fnmatch
 import calendar
+import pickle
+import hashlib
 
 from codecs import open
 from collections import defaultdict
@@ -147,6 +149,62 @@ class Generator(object):
                 value = list(value.items())  # py3k safeguard for iterators
             self.context[item] = value
 
+    def load_cache(self, name):
+        """Load the specified cache within CACHE_DIRECTORY"""
+        self._cache_path = os.path.join(self.settings['CACHE_DIRECTORY'], name)
+        try:
+            with open(self._cache_path, 'rb') as f:
+                self._cache = pickle.load(f)
+        except Exception as e:
+            self._cache = {}
+
+    def _get_file_stamp(self, filename):
+        """Check if the given file has been modified
+        since the previous build.
+
+        depending on CHECK_MODIFIED_METHOD
+        a float may be returned for 'mtime',
+        a hash for a function name in the hashlib module
+        or an empty bytes string otherwise
+        """
+        filename = os.path.join(self.path, filename)   #TODO generator specific
+        method = self.settings['CHECK_MODIFIED_METHOD']
+        if method == 'mtime':
+            return os.path.getmtime(filename)
+        else:
+            try:
+                hash_func = getattr(hashlib, method)
+                with open(filename, 'rb') as f:
+                    hash_obj = hash_func(f.read())
+                    return hash_obj.digest()
+            except Exception:
+                return b''
+
+    def get_content_if_unmodified(self, filename):
+        """Get the cached content object for the given filename
+        if the file has not been modified.
+
+        If no record exists or file has been modified, return None.
+        """
+        info, content = self._cache.get(filename, (None, None))
+        if info != self._get_file_stamp(filename):
+            content = None
+        return content
+
+    def cache_content(self, filename, content_obj):
+        """Set cached information and content object for given file"""
+        info = self._get_file_stamp(filename)
+        self._cache[filename] = (info, content_obj)
+
+    def save_cache(self):
+        """Save the updated cache"""
+        try:
+            mkdir_p(self.settings['CACHE_DIRECTORY'])
+            with open(self._cache_path, 'wb') as f:
+                pickle.dump(self._cache, f)
+        except Exception as e:
+            logger.warning('Could not save cache {}\n{}'.format(self._cache_path, e))
+                
 
 class _FileLoader(BaseLoader):
 
@@ -192,6 +250,7 @@ class ArticlesGenerator(Generator):
         self.authors = defaultdict(list)
         self.drafts = []
         super(ArticlesGenerator, self).__init__(*args, **kwargs)
+        self.load_cache('articles_generator')
         signals.article_generator_init.send(self)
 
     def generate_feeds(self, writer):
@@ -406,20 +465,24 @@ class ArticlesGenerator(Generator):
         for f in self.get_files(
                 self.settings['ARTICLE_DIR'],
                 exclude=self.settings['ARTICLE_EXCLUDES']):
-            try:
-                article = self.readers.read_file(
-                    base_path=self.path, path=f, content_class=Article,
-                    context=self.context,
-                    preread_signal=signals.article_generator_preread,
-                    preread_sender=self,
-                    context_signal=signals.article_generator_context,
-                    context_sender=self)
-            except Exception as e:
-                logger.warning('Could not process {}\n{}'.format(f, e))
-                continue
+            article = self.get_content_if_unmodified(f)
+            if article is None:
+                try:
+                    article = self.readers.read_file(
+                        base_path=self.path, path=f, content_class=Article,
+                        context=self.context,
+                        preread_signal=signals.article_generator_preread,
+                        preread_sender=self,
+                        context_signal=signals.article_generator_context,
+                        context_sender=self)
+                except Exception as e:
+                    logger.warning('Could not process {}\n{}'.format(f, e))
+                    continue
 
-            if not is_valid_content(article, f):
-                continue
+                if not is_valid_content(article, f):
+                    continue
+
+                self.cache_content(f, article)
 
             self.add_source_path(article)
 
@@ -491,7 +554,7 @@ class ArticlesGenerator(Generator):
 
         self._update_context(('articles', 'dates', 'tags', 'categories',
                               'tag_cloud', 'authors', 'related_posts'))
-
+        self.save_cache()
         signals.article_generator_finalized.send(self)
 
     def generate_output(self, writer):
