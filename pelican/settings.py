@@ -119,6 +119,7 @@ DEFAULT_CONFIG = {
     'SLUGIFY_SOURCE': 'title',
     'CACHE_DIRECTORY': 'cache',
     'CHECK_MODIFIED_METHOD': 'mtime',
+    'CACHE_OUTPUT_CONTEXT': True,
     }
 
 PYGMENTS_RST_OPTIONS = None

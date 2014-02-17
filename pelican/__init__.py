@@ -168,6 +168,8 @@ class Pelican(object):
             if hasattr(p, 'generate_output'):
                 p.generate_output(writer)
 
+        writer.save_cache()
+
         signals.finalized.send(self)
 
         articles_generator = next(g for g in generators

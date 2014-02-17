@@ -8,8 +8,6 @@ import logging
 import shutil
 import fnmatch
 import calendar
-import pickle
-import hashlib
 
 from codecs import open
 from collections import defaultdict
@@ -22,14 +20,14 @@ from jinja2 import (Environment, FileSystemLoader, PrefixLoader, ChoiceLoader,
 
 from pelican.contents import Article, Draft, Page, Static, is_valid_content
 from pelican.readers import Readers
-from pelican.utils import copy, process_translations, mkdir_p, DateFormatter
+from pelican.utils import copy, process_translations, mkdir_p, DateFormatter, CacheManager
 from pelican import signals
 
 
 logger = logging.getLogger(__name__)
 
 
-class Generator(object):
+class Generator(CacheManager):
     """Baseclass generator"""
 
     def __init__(self, context, settings, path, theme, output_path, **kwargs):
@@ -149,62 +147,6 @@ class Generator(object):
                 value = list(value.items())  # py3k safeguard for iterators
             self.context[item] = value
 
-    def load_cache(self, name):
-        """Load the specified cache within CACHE_DIRECTORY"""
-        self._cache_path = os.path.join(self.settings['CACHE_DIRECTORY'], name)
-        try:
-            with open(self._cache_path, 'rb') as f:
-                self._cache = pickle.load(f)
-        except Exception as e:
-            self._cache = {}
-
-    def _get_file_stamp(self, filename):
-        """Check if the given file has been modified
-        since the previous build.
-
-        depending on CHECK_MODIFIED_METHOD
-        a float may be returned for 'mtime',
-        a hash for a function name in the hashlib module
-        or an empty bytes string otherwise
-        """
-        filename = os.path.join(self.path, filename)   #TODO generator specific
-        method = self.settings['CHECK_MODIFIED_METHOD']
-        if method == 'mtime':
-            return os.path.getmtime(filename)
-        else:
-            try:
-                hash_func = getattr(hashlib, method)
-                with open(filename, 'rb') as f:
-                    hash_obj = hash_func(f.read())
-                    return hash_obj.digest()
-            except Exception:
-                return b''
-
-    def get_content_if_unmodified(self, filename):
-        """Get the cached content object for the given filename
-        if the file has not been modified.
-
-        If no record exists or file has been modified, return None.
-        """
-        info, content = self._cache.get(filename, (None, None))
-        if info != self._get_file_stamp(filename):
-            content = None
-        return content
-
-    def cache_content(self, filename, content_obj):
-        """Set cached information and content object for given file"""
-        info = self._get_file_stamp(filename)
-        self._cache[filename] = (info, content_obj)
-
-    def save_cache(self):
-        """Save the updated cache"""
-        try:
-            mkdir_p(self.settings['CACHE_DIRECTORY'])
-            with open(self._cache_path, 'wb') as f:
-                pickle.dump(self._cache, f)
-        except Exception as e:
-            logger.warning('Could not save cache {}\n{}'.format(self._cache_path, e))
-                
 
 class _FileLoader(BaseLoader):
 

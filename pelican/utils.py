@@ -12,6 +12,8 @@ import pytz
 import re
 import shutil
 import traceback
+import pickle
+import hashlib
 
 from collections import Hashable
 from contextlib import contextmanager
@@ -574,3 +576,79 @@ def split_all(path):
             break
         path = head
     return components
+
+
+class CacheManager(object):
+    """Class that can manage a cache of objects it works with"""
+    
+    def load_cache(self, name):
+        """Load the specified cache within CACHE_DIRECTORY"""
+        self._cache_path = os.path.join(self.settings['CACHE_DIRECTORY'], name)
+        try:
+            with open(self._cache_path, 'rb') as f:
+                self._cache = pickle.load(f)
+        except Exception as e:
+            self._cache = {}
+
+    def _get_file_stamp(self, filename):
+        """Check if the given file has been modified
+        since the previous build.
+
+        depending on CHECK_MODIFIED_METHOD
+        a float may be returned for 'mtime',
+        a hash for a function name in the hashlib module
+        or an empty bytes string otherwise
+        """
+        try:
+            base_path = self.path                       #for generator
+        except AttributeError:
+            base_path = self.output_path                   #for writer
+        filename = os.path.join(base_path, filename) 
+        method = self.settings['CHECK_MODIFIED_METHOD']
+        if method == 'mtime':
+            return os.path.getmtime(filename)
+        else:
+            try:
+                hash_func = getattr(hashlib, method)
+                with open(filename, 'rb') as f:
+                    hash_obj = hash_func(f.read())
+                    return hash_obj.digest()
+            except Exception:
+                return b''
+
+    def get_content_if_unmodified(self, filename):
+        """Get the cached content object for the given filename
+        if the file has not been modified.
+
+        If no record exists or file has been modified, return None.
+        """
+        info, content = self._cache.get(filename, (None, None))
+        if info != self._get_file_stamp(filename):
+            content = None
+        return content
+
+    def cache_content(self, filename, content_obj):
+        """Set cached information and content object for given file"""
+        info = self._get_file_stamp(filename)
+        self._cache[filename] = (info, content_obj)
+
+    def get_cached_context(self, filename):
+        """Get cached context for the output filename
+
+        if no context is cached, return {}
+        """
+        return self._cache.get(filename, {})
+
+    def cache_context(self, filename, context):
+        """Cache the context for the output filename"""
+        self._cache[filename] = context
+
+    def save_cache(self):
+        """Save the updated cache"""
+        try:
+            mkdir_p(self.settings['CACHE_DIRECTORY'])
+            with open(self._cache_path, 'wb') as f:
+                pickle.dump(self._cache, f)
+        except Exception as e:
+            logger.warning('Could not save cache {}\n{}'.format(self._cache_path, e))
+                
