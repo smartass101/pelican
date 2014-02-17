@@ -114,6 +114,7 @@ DEFAULT_CONFIG = {
     'INTRASITE_LINK_REGEX': '[{|](?P<what>.*?)[|}]',
     'CACHE_DIRECTORY': 'cache',
     'CHECK_MODIFIED_METHOD': 'mtime',
+    'CACHE_OUTPUT_CONTEXT': True,
     }
 
 PYGMENTS_RST_OPTIONS = None
