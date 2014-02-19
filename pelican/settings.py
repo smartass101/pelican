@@ -117,9 +117,11 @@ DEFAULT_CONFIG = {
     'SLUG_SUBSTITUTIONS': (),
     'INTRASITE_LINK_REGEX': '[{|](?P<what>.*?)[|}]',
     'SLUGIFY_SOURCE': 'title',
+    'CACHE_CONTENT': True,
+    'CACHE_OUTPUT_CONTEXT': True,
     'CACHE_DIRECTORY': 'cache',
     'CHECK_MODIFIED_METHOD': 'mtime',
-    'CACHE_OUTPUT_CONTEXT': True,
+    'LOAD_CACHE': True,
     }
 
 PYGMENTS_RST_OPTIONS = None

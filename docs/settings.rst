@@ -1,5 +1,6 @@
-Settings
-########
+==========
+ Settings
+==========
 
 Pelican is configurable thanks to a configuration file you can pass to
 the command line::
@@ -166,10 +167,14 @@ Setting name (default value)                                                    
 `PYGMENTS_RST_OPTIONS` (``[]``)                                                  A list of default Pygments settings for your reStructuredText
                                                                                  code blocks. See :ref:`internal_pygments_options` for a list of
                                                                                  supported options.
-
-`SLUGIFY_SOURCE` (``'input'``)                                                Specifies where you want the slug to be automatically generated 
+`SLUGIFY_SOURCE` (``'input'``)                                                   Specifies where you want the slug to be automatically generated 
                                                                                  from. Can be set to 'title' to use the Title: metadata tag or 
                                                                                  'basename' to use the articles basename to make a slug. 
+`CACHE_CONTENT` (``True``)                                                       If ``True``, save read content in a cache file. 
+                                                                                 See :ref:`generating_only_modified_content` for details about caching.
+`CACHE_DIRECTORY` (``cache``)                                                    Directory in which to store cache files.
+`CHECK_MODIFIED_METHOD` (``mtime``)                                              Controls how files are checked for modifications.
+`LOAD_CACHE` (``True``)                                                          If ``True``, load unmodified content from cache.
 ===============================================================================  =====================================================================
 
 .. [#] Default is the system locale.
@@ -599,7 +604,7 @@ Setting name (default value)                             What does it do?
 .. [3] %s is the language
 
 Ordering content
-=================
+================
 
 ================================================    =====================================================
 Setting name (default value)                        What does it do?
@@ -705,9 +710,9 @@ pages with changed content.
 When Pelican is about to read some content source file:
 
 1. The hash or modification time information for the file from a
-   previous build are loaded from a cache file.  These files are
-   stored in the `CACHE_DIRECTORY` directory.  If the file has no
-   record in the cache file, it is read as usual.
+   previous build are loaded from a cache file if `LOAD_CACHE` is
+   ``True`` These files are stored in the `CACHE_DIRECTORY` directory.
+   If the file has no record in the cache file, it is read as usual.
 2. The file is checked according to `CHECK_MODIFIED_METHOD`:
     - If set to ``'mtime'``, the modification time of the file is
       checked.
@@ -721,7 +726,7 @@ When Pelican is about to read some content source file:
    and the file is not read.
 4. If the file is considered changed, the file is read and the new
    modification information and the content object are saved to the
-   cache.
+   cache if `CACHE_CONTENT` is ``True``.
 
 When Pelican is about to write some content:
 
@@ -741,8 +746,14 @@ commands without the mtime preservation mode (invoked e.g. by
 
 The cache files are Python pickles, so they may not be readable by
 different versions of Python as the pickle format often changes. If
-such an error is encountered, the cache files have to be removed and
-new ones created by generating the whole site.
+such an error is encountered, the cache files have to be rebuilt
+using the pelican commandline option ``--rebuild-cache``.
+
+The ``--rebuild-cache`` commandline option is also useful when the
+whole site needs to be regenerated due to e.g. modifications to the
+settings file or theme files. When pelican runs in autorealod mode,
+modification of the settings file or theme will trigger a full rebuild
+automatically.
 
 Example settings
 ================

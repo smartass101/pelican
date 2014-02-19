@@ -259,6 +259,10 @@ def parse_arguments():
                         action='store_true',
                         help='Relaunch pelican each time a modification occurs'
                         ' on the content files.')
+
+    parser.add_argument('-c', '--rebuild-cache', action='store_true',
+                        dest='rebuild_cache', help='Rebuild everything, including cache')
+
     return parser.parse_args()
 
 
@@ -274,6 +278,9 @@ def get_config(args):
         config['THEME'] = abstheme if os.path.exists(abstheme) else args.theme
     if args.delete_outputdir is not None:
         config['DELETE_OUTPUT_DIRECTORY'] = args.delete_outputdir
+    if args.rebuild_cache:
+        config['LOAD_CACHE'] = False
+        config['CACHE_CONTENT'] = True
 
     # argparse returns bytes in Py2. There is no definite answer as to which
     # encoding argparse (or sys.argv) uses.
