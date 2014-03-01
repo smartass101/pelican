@@ -728,16 +728,6 @@ When Pelican is about to read some content source file:
    modification information and the content object are saved to the
    cache if `CACHE_CONTENT` is ``True``.
 
-When Pelican is about to write some content:
-
-1. For the given output name, the local context dictionary that was
-   passed to the template in the previous build is loaded from the
-   cache.
-2. If the previous context is the same as the new one, no file is
-   written.
-3. Else the file is written as usual and the new template context is
-   saved.
-
 Modification time based checking is faster than comparing file hashes,
 but is not as reliable, because mtime information can be lost when
 e.g. copying the content sources using the ``cp`` or ``rsync``
