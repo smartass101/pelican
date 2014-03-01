@@ -152,7 +152,8 @@ class Generator(object):
     def _map(self, func, iterable):
         """A modified map function that can map in parallel
 
-        if configured to process in parallel, uses the _worker_pool
+        if configured to process in parallel, uses
+        :meth:`multirpocessing.pool.Pool.map`
         else uses the standard map function
         """
         workers = self.settings['GENERATOR_PARALLEL_WORKERS']
