@@ -747,9 +747,9 @@ commands without the mtime preservation mode (invoked e.g. by
 The cache files are Python pickles, so they may not be readable by
 different versions of Python as the pickle format often changes. If
 such an error is encountered, the cache files have to be rebuilt
-using the pelican commandline option ``--rebuild-cache``.
+using the pelican command-line option ``--full-rebuild``.
 
-The ``--rebuild-cache`` commandline option is also useful when the
+The ``--full-rebuild`` command-line option is also useful when the
 whole site needs to be regenerated due to e.g. modifications to the
 settings file or theme files. When pelican runs in autorealod mode,
 modification of the settings file or theme will trigger a full rebuild
