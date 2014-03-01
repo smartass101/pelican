@@ -341,9 +341,12 @@ def main():
                     # have changed, no matter what extension the filenames
                     # have.
                     modified = {k: next(v) for k, v in watchers.items()}
+                    original_load_cache = settings['LOAD_CACHE']
 
                     if modified['settings']:
                         pelican, settings = get_instance(args)
+                        original_load_cache = settings['LOAD_CACHE']
+                        pelican.settings['LOAD_CACHE'] = False   # invalidate cache
 
                     if any(modified.values()):
                         print('\n-> Modified: {}. re-generating...'.format(
@@ -355,8 +358,13 @@ def main():
                         if modified['theme'] is None:
                             logger.warning('Empty theme folder. Using `basic` '
                                            'theme.')
+                        elif modified['theme']:
+                            # theme modified, needs full rebuild -> no cache
+                            pelican.settings['LOAD_CACHE'] = False
 
                         pelican.run()
+                        # restore original caching policy
+                        pelican.settings['LOAD_CACHE'] = original_load_cache
 
                 except KeyboardInterrupt:
                     logger.warning("Keyboard interrupt, quitting.")
