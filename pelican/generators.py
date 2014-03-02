@@ -14,7 +14,8 @@ from collections import defaultdict
 from functools import partial
 from itertools import chain, groupby
 from operator import attrgetter, itemgetter
-from multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count
+from multiprocessing.pool import ThreadPool
 
 from jinja2 import (Environment, FileSystemLoader, PrefixLoader, ChoiceLoader,
                     BaseLoader, TemplateNotFound)
@@ -149,7 +150,7 @@ class Generator(object):
             self.context[item] = value
 
 
-    def _map(self, func, iterable):
+    def map(self, func, iterable):
         """A modified map function that can map in parallel
 
         if configured to process in parallel, uses
@@ -161,7 +162,7 @@ class Generator(object):
             return map(func, iterable)
         else:
             workers = cpu_count() if workers == 0 else workers
-            worker_pool = Pool(processes=workers)
+            worker_pool = ThreadPool(processes=workers)
             return worker_pool.map(func, iterable)
 
 
@@ -290,7 +291,7 @@ class ArticlesGenerator(Generator):
             write(article.save_as, self.get_template(article.template),
                   self.context, article=article, category=article.category,
                   override_output=hasattr(article, 'override_save_as'))
-        self._map(_write_function, chain(self.translations, self.articles))
+        self.map(_write_function, chain(self.translations, self.articles))
 
     def generate_period_archives(self, write):
         """Generate per-year, per-month, and per-day archives."""
