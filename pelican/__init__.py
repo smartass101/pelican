@@ -332,6 +332,7 @@ def main():
             print('  --- AutoReload Mode: Monitoring `content`, `theme` and'
                   ' `settings` for changes. ---')
 
+            first_run = True              # load cache on first run
             while True:
                 try:
                     # Check source dir for changed files ending with the given
@@ -344,8 +345,9 @@ def main():
 
                     if modified['settings']:
                         pelican, settings = get_instance(args)
-                        original_load_cache = settings['LOAD_CACHE']
-                        pelican.settings['LOAD_CACHE'] = False   # invalidate cache
+                        if not first_run:
+                            original_load_cache = settings['LOAD_CACHE']
+                            pelican.settings['LOAD_CACHE'] = False   # invalidate cache
 
                     if any(modified.values()):
                         print('\n-> Modified: {}. re-generating...'.format(
@@ -359,9 +361,11 @@ def main():
                                            'theme.')
                         elif modified['theme']:
                             # theme modified, needs full rebuild -> no cache
-                            pelican.settings['LOAD_CACHE'] = False
+                            if not first_run:   # but not on first run
+                                pelican.settings['LOAD_CACHE'] = False
 
                         pelican.run()
+                        first_run = False
                         # restore original caching policy
                         pelican.settings['LOAD_CACHE'] = original_load_cache
 
