@@ -179,15 +179,20 @@ class Writer(CacheManager):
         localcontext.update(kwargs)
 
         if self.settings.get('CACHE_OUTPUT_CONTEXT', False):
-            cached_context = self.get_cached_context(name)
+            destination_path = os.path.join(self.output_path, name)
+            cached_context = self.get_cached_context(destination_path)
             for k, v1 in cached_context.items():
                 v2 = localcontext[k]
+                if k == 'tag_pool':
+                    v1 = set(v1)
+                    v2 = set(v2)
                 if v1 != v2:
-                    logger.debug('DIFFERENT {}: {}, {}'.format(k, v1, v2))
-            if cached_context == localcontext:
+                    logger.debug('Different {} {}: {} != {}'.format(destination_path, k, v1, v2))
+                    self.cache_context(destination_path, localcontext)
+                    break
+            else:                         # dit not break
                 return
-            else:
-                self.cache_context(name, localcontext)
+
 
         # pagination
         if paginated:
