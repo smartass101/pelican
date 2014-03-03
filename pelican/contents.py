@@ -324,10 +324,11 @@ class Content(object):
         )
 
     def __eq__(self, other):
-        """Compare with other Content object by comparing their metadata and content"""
+        """Compare with metadata and content of other Content object"""
         return self.metadata == other.metadata and self.content == other.content
 
-    __hash__ = object.__hash__    # keep hashing as we override __eq__
+    # keep basic hashing functionality for caching to work
+    __hash__ = object.__hash__
 
 
 class Page(Content):
