@@ -149,13 +149,27 @@ class Writer(CacheManager):
 
         def _write_file(template, localcontext, output_path, name, override):
             """Render the template write the file."""
+            path = os.path.join(output_path, name)
+            if self.settings.get('CACHE_OUTPUT_CONTEXT', False):
+                cached_context = self.get_cached_context(path)
+                for k, v1 in cached_context.items():
+                    v2 = localcontext[k]
+                    if k == 'tag_pool':
+                        v1 = set(v1)
+                        v2 = set(v2)
+                    if v1 != v2:
+                        logger.debug('Different {} {}: {} != {}'.format(path, k, v1, v2))
+                        self.cache_context(path, localcontext)
+                        break
+                else:                         # dit not break
+                    return
+
             old_locale = locale.setlocale(locale.LC_ALL)
             locale.setlocale(locale.LC_ALL, str('C'))
             try:
                 output = template.render(localcontext)
             finally:
                 locale.setlocale(locale.LC_ALL, old_locale)
-            path = os.path.join(output_path, name)
             try:
                 os.makedirs(os.path.dirname(path))
             except Exception:
@@ -177,22 +191,6 @@ class Writer(CacheManager):
 
         localcontext['output_file'] = name
         localcontext.update(kwargs)
-
-        if self.settings.get('CACHE_OUTPUT_CONTEXT', False):
-            destination_path = os.path.join(self.output_path, name)
-            cached_context = self.get_cached_context(destination_path)
-            for k, v1 in cached_context.items():
-                v2 = localcontext[k]
-                if k == 'tag_pool':
-                    v1 = set(v1)
-                    v2 = set(v2)
-                if v1 != v2:
-                    logger.debug('Different {} {}: {} != {}'.format(destination_path, k, v1, v2))
-                    self.cache_context(destination_path, localcontext)
-                    break
-            else:                         # dit not break
-                return
-
 
         # pagination
         if paginated:
