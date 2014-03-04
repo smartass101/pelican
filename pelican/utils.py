@@ -584,8 +584,17 @@ class CacheManager(object):
     def load_cache(self, name):
         """Load the specified cache within CACHE_DIRECTORY"""
         self._cache_path = os.path.join(self.settings['CACHE_DIRECTORY'], name)
+        self._cache_content = self.settings['CACHE_CONTENT']
+        if not self.settings['LOAD_CACHE']:
+            self._cache = {}
+            return
+        if self.settings['GZIP_CACHE']:
+            import gzip
+            self._cache_open = gzip.open
+        else:
+            self._cache_open = open
         try:
-            with open(self._cache_path, 'rb') as f:
+            with self._cache_open(self._cache_path, 'rb') as f:
                 self._cache = pickle.load(f)
         except Exception as e:
             self._cache = {}
@@ -647,7 +656,7 @@ class CacheManager(object):
         """Save the updated cache"""
         try:
             mkdir_p(self.settings['CACHE_DIRECTORY'])
-            with open(self._cache_path, 'wb') as f:
+            with self._cache_open(self._cache_path, 'wb') as f:
                 pickle.dump(self._cache, f)
         except Exception as e:
             logger.warning('Could not save cache {}\n{}'.format(self._cache_path, e))

@@ -120,6 +120,7 @@ DEFAULT_CONFIG = {
     'CACHE_CONTENT': True,
     'CACHE_OUTPUT_CONTEXT': True,
     'CACHE_DIRECTORY': 'cache',
+    'GZIP_CACHE': True,
     'CHECK_MODIFIED_METHOD': 'mtime',
     'LOAD_CACHE': True,
     }

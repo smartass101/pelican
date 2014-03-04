@@ -175,6 +175,7 @@ Setting name (default value)                                                    
 `CACHE_DIRECTORY` (``cache``)                                                    Directory in which to store cache files.
 `CHECK_MODIFIED_METHOD` (``mtime``)                                              Controls how files are checked for modifications.
 `LOAD_CACHE` (``True``)                                                          If ``True``, load unmodified content from cache.
+`GZIP_CACHE` (``True``)                                                          If ``True``, use gzip to (de)compress the cache files.
 ===============================================================================  =====================================================================
 
 .. [#] Default is the system locale.
