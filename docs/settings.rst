@@ -751,6 +751,8 @@ The cache files are Python pickles, so they may not be readable by
 different versions of Python as the pickle format often changes. If
 such an error is encountered, the cache files have to be rebuilt
 using the pelican command-line option ``--full-rebuild``.
+The cache files also have to be rebuilt when changing the 
+`GZIP_CACHE` setting for cache file reading to work.
 
 The ``--full-rebuild`` command-line option is also useful when the
 whole site needs to be regenerated due to e.g. modifications to the
