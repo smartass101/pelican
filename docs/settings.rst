@@ -172,6 +172,8 @@ Setting name (default value)                                                    
                                                                                  'basename' to use the articles basename to make a slug. 
 `CACHE_CONTENT` (``True``)                                                       If ``True``, save read content in a cache file. 
                                                                                  See :ref:`generating_only_modified_content` for details about caching.
+`CACHE_OUTPUT_CONTEXT` (``True``)                                                If ``True``, save created template context in a cache file.
+
 `CACHE_DIRECTORY` (``cache``)                                                    Directory in which to store cache files.
 `CHECK_MODIFIED_METHOD` (``mtime``)                                              Controls how files are checked for modifications.
 `LOAD_CACHE` (``True``)                                                          If ``True``, load unmodified content from cache.
@@ -712,7 +714,7 @@ When Pelican is about to read some content source file:
 
 1. The hash or modification time information for the file from a
    previous build are loaded from a cache file if `LOAD_CACHE` is
-   ``True`` These files are stored in the `CACHE_DIRECTORY` directory.
+   ``True``. These files are stored in the `CACHE_DIRECTORY` directory.
    If the file has no record in the cache file, it is read as usual.
 2. The file is checked according to `CHECK_MODIFIED_METHOD`:
     - If set to ``'mtime'``, the modification time of the file is
@@ -734,6 +736,16 @@ but is not as reliable, because mtime information can be lost when
 e.g. copying the content sources using the ``cp`` or ``rsync``
 commands without the mtime preservation mode (invoked e.g. by
 ``--archive``).
+
+When Pelican is about to write some content:
+
+1. For the given output name, the local context dictionary that was
+   passed to the template in the previous build is loaded from the
+   cache if `LOAD_CACHE` is ``True``.
+2. If the previous context is the same as the new one, no file is
+   written.
+3. Else the file is written as usual and the new template context is
+   saved if `CACHE_OUTPUT_CONTEXT` is ``True``.
 
 The cache files are Python pickles, so they may not be readable by
 different versions of Python as the pickle format often changes. If
