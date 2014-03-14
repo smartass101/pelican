@@ -535,20 +535,24 @@ class PagesGenerator(Generator):
         for f in self.get_files(
                 self.settings['PAGE_DIR'],
                 exclude=self.settings['PAGE_EXCLUDES']):
-            try:
-                page = self.readers.read_file(
-                    base_path=self.path, path=f, content_class=Page,
-                    context=self.context,
-                    preread_signal=signals.page_generator_preread,
-                    preread_sender=self,
-                    context_signal=signals.page_generator_context,
-                    context_sender=self)
-            except Exception as e:
-                logger.warning('Could not process {}\n{}'.format(f, e))
-                continue
+            page = self.get_cached_data(f, None)
+            if page is None:
+                try:
+                    page = self.readers.read_file(
+                        base_path=self.path, path=f, content_class=Page,
+                        context=self.context,
+                        preread_signal=signals.page_generator_preread,
+                        preread_sender=self,
+                        context_signal=signals.page_generator_context,
+                        context_sender=self)
+                except Exception as e:
+                    logger.warning('Could not process {}\n{}'.format(f, e))
+                    continue
 
-            if not is_valid_content(page, f):
-                continue
+                if not is_valid_content(page, f):
+                    continue
+
+                self.cache_data(f, page)
 
             self.add_source_path(page)
 
@@ -568,6 +572,7 @@ class PagesGenerator(Generator):
         self._update_context(('pages', ))
         self.context['PAGES'] = self.pages
 
+        self.save_cache()
         signals.page_generator_finalized.send(self)
 
     def generate_output(self, writer):
