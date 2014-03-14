@@ -580,7 +580,7 @@ def split_all(path):
 
 class FileDataCacher(object):
     '''Class that can cache data contained in files'''
-    
+
     def __init__(self, settings, cache_policy_key):
         '''Load the specified cache within CACHE_DIRECTORY
 
@@ -630,7 +630,7 @@ class FileDataCacher(object):
         except Exception as e:
             logger.warning('Could not save cache {}\n{}'.format(
                 self._cache_path, e))
-                
+
 
 class FileStampDataCacher(FileDataCacher):
     '''Subclass that also caches the stamp of the file'''
@@ -638,7 +638,7 @@ class FileStampDataCacher(FileDataCacher):
     def __init__(self, settings, cache_policy_key):
         '''This sublcass additionaly sets filestamp function'''
         super(FileStampDataCacher, self).__init__(settings, cache_policy_key)
-        
+
         method = self.settings['CHECK_MODIFIED_METHOD']
         if method == 'mtime':
             self._filestamp_func = os.path.getmtime

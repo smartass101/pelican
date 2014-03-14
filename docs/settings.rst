@@ -1,6 +1,5 @@
-==========
- Settings
-==========
+Settings
+########
 
 Pelican is configurable thanks to a configuration file you can pass to
 the command line::
@@ -167,10 +166,10 @@ Setting name (default value)                                                    
 `PYGMENTS_RST_OPTIONS` (``[]``)                                                  A list of default Pygments settings for your reStructuredText
                                                                                  code blocks. See :ref:`internal_pygments_options` for a list of
                                                                                  supported options.
-`SLUGIFY_SOURCE` (``'input'``)                                                   Specifies where you want the slug to be automatically generated 
+`SLUGIFY_SOURCE` (``'input'``)                                                   Specifies where you want the slug to be automatically generated
                                                                                  from. Can be set to 'title' to use the Title: metadata tag or 
                                                                                  'basename' to use the articles basename to make a slug. 
-`CACHE_CONTENT` (``True``)                                                       If ``True``, save read content in a cache file. 
+`CACHE_CONTENT` (``True``)                                                       If ``True``, save read content in a cache file.
                                                                                  See :ref:`generating_only_modified_content` for details about caching.
 `CACHE_OUTPUT_CONTEXT` (``True``)                                                If ``True``, save created template context in a cache file.
 
@@ -751,7 +750,7 @@ The cache files are Python pickles, so they may not be readable by
 different versions of Python as the pickle format often changes. If
 such an error is encountered, the cache files have to be rebuilt
 using the pelican command-line option ``--full-rebuild``.
-The cache files also have to be rebuilt when changing the 
+The cache files also have to be rebuilt when changing the
 `GZIP_CACHE` setting for cache file reading to work.
 
 The ``--full-rebuild`` command-line option is also useful when the
