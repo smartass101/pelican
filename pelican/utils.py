@@ -578,13 +578,20 @@ def split_all(path):
     return components
 
 
-class CacheManager(object):
-    """Class that can manage a cache of objects it works with"""
+class FileDataCacher(object):
+    '''Class that can cache data contained in files'''
     
-    def load_cache(self, name):
-        """Load the specified cache within CACHE_DIRECTORY"""
+    def __init__(self, settings, cache_policy_key):
+        '''Load the specified cache within CACHE_DIRECTORY
+
+        only if LOAD_CACHE is True, may use gzip if GZIP_CACHE
+        Sets caching policy according to *cache_policy_key*
+        in *settings*
+        '''
+        self.settings = settings
+        name = self.__class__.__name__
         self._cache_path = os.path.join(self.settings['CACHE_DIRECTORY'], name)
-        self._cache_content = self.settings['CACHE_CONTENT']
+        self._cache_data_policy = self.settings[cache_policy_key]
         if not self.settings['LOAD_CACHE']:
             self._cache = {}
             return
@@ -599,65 +606,82 @@ class CacheManager(object):
         except Exception as e:
             self._cache = {}
 
+    def cache_data(self, filename, data):
+        '''Cache data for given file'''
+        if not self._cache_data_policy:
+            return
+        self._cache[filename] = data
+
+    def get_cached_data(self, filename, default={}):
+        '''Get cached data for the given file
+
+        if no data is cached, return the default object
+        '''
+        return self._cache.get(filename, default)
+
+    def save_cache(self):
+        '''Save the updated cache'''
+        if not self._cache_data_policy:
+            return
+        try:
+            mkdir_p(self.settings['CACHE_DIRECTORY'])
+            with self._cache_open(self._cache_path, 'wb') as f:
+                pickle.dump(self._cache, f)
+        except Exception as e:
+            logger.warning('Could not save cache {}\n{}'.format(
+                self._cache_path, e))
+                
+
+class FileStampDataCacher(FileDataCacher):
+    '''Subclass that also caches the stamp of the file'''
+
+    def __init__(self, settings, cache_policy_key):
+        '''This sublcass additionaly sets filestamp function'''
+        super(FileStampDataCacher, self).__init__(settings, cache_policy_key)
+        
+        method = self.settings['CHECK_MODIFIED_METHOD']
+        if method == 'mtime':
+            self._filestamp_func = os.path.getmtime
+        else:
+            try:
+                hash_func = getattr(hashlib, method)
+                def filestamp_func(buf):
+                    return hash_func(buf).digest()
+                self._filestamp_func = filestamp_func
+            except ImportError:
+                self._filestamp_func = None
+
+    def cache_data(self, filename, data):
+        '''Cache stamp and data for the given file'''
+        stamp = self._get_file_stamp(filename)
+        super(FileStampDataCacher, self).cache_data(filename, (stamp, data))
+
     def _get_file_stamp(self, filename):
-        """Check if the given file has been modified
+        '''Check if the given file has been modified
         since the previous build.
 
         depending on CHECK_MODIFIED_METHOD
         a float may be returned for 'mtime',
         a hash for a function name in the hashlib module
         or an empty bytes string otherwise
-        """
+        '''
+        filename = os.path.join(self.path, filename)
         try:
-            base_path = self.path                       #for generator
-        except AttributeError:
-            base_path = self.output_path                   #for writer
-        filename = os.path.join(base_path, filename) 
-        method = self.settings['CHECK_MODIFIED_METHOD']
-        if method == 'mtime':
-            return os.path.getmtime(filename)
-        else:
-            try:
-                hash_func = getattr(hashlib, method)
-                with open(filename, 'rb') as f:
-                    hash_obj = hash_func(f.read())
-                    return hash_obj.digest()
-            except Exception:
-                return b''
+            with open(filename, 'rb') as f:
+                return self._filestamp_func(f.read())
+        except Exception:
+            return b''
 
-    def get_content_if_unmodified(self, filename):
-        """Get the cached content object for the given filename
+    def get_cached_data(self, filename, default=None):
+        '''Get the cached data for the given filename
         if the file has not been modified.
 
-        If no record exists or file has been modified, return None.
-        """
-        info, content = self._cache.get(filename, (None, None))
-        if info != self._get_file_stamp(filename):
-            content = None
-        return content
-
-    def cache_content(self, filename, content_obj):
-        """Set cached information and content object for given file"""
-        info = self._get_file_stamp(filename)
-        self._cache[filename] = (info, content_obj)
-
-    def get_cached_context(self, filename):
-        """Get cached context for the output filename
-
-        if no context is cached, return {}
-        """
-        return self._cache.get(filename, {})
-
-    def cache_context(self, filename, context):
-        """Cache the context for the output filename"""
-        self._cache[filename] = context
-
-    def save_cache(self):
-        """Save the updated cache"""
-        try:
-            mkdir_p(self.settings['CACHE_DIRECTORY'])
-            with self._cache_open(self._cache_path, 'wb') as f:
-                pickle.dump(self._cache, f)
-        except Exception as e:
-            logger.warning('Could not save cache {}\n{}'.format(self._cache_path, e))
-                
+        If no record exists or file has been modified, return default.
+        Modification is checked by compaing the cached
+        and current file stamp.
+        '''
+        stamp, data = super(FileStampDataCacher, self).get_cached_data(
+            filename, (None, default))
+        if stamp != self._get_file_stamp(filename):
+            return default
+        return data

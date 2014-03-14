@@ -16,13 +16,14 @@ from feedgenerator import Atom1Feed, Rss201rev2Feed
 from jinja2 import Markup
 
 from pelican.paginator import Paginator
-from pelican.utils import get_relative_path, path_to_url, set_date_tzinfo, CacheManager
+from pelican.utils import (get_relative_path, path_to_url, set_date_tzinfo,
+                           FileDataCacher)
 from pelican import signals
 
 logger = logging.getLogger(__name__)
 
 
-class Writer(CacheManager):
+class Writer(FileDataCacher):
 
     def __init__(self, output_path, settings=None):
         self.output_path = output_path
@@ -30,7 +31,8 @@ class Writer(CacheManager):
         self.settings = settings or {}
         self._written_files = set()
         self._overridden_files = set()
-        self.load_cache('writer')
+        # set up caching
+        super(Writer, self).__init__(settings, 'CACHE_OUTPUT_CONTEXT')
 
     def _create_new_feed(self, feed_type, context):
         feed_class = Rss201rev2Feed if feed_type == 'rss' else Atom1Feed
@@ -150,19 +152,18 @@ class Writer(CacheManager):
         def _write_file(template, localcontext, output_path, name, override):
             """Render the template write the file."""
             path = os.path.join(output_path, name)
-            if self.settings.get('CACHE_OUTPUT_CONTEXT', False):
-                cached_context = self.get_cached_context(path)
-                for k, v1 in cached_context.items():
-                    v2 = localcontext[k]
-                    if k == 'tag_pool':
-                        v1 = set(v1)
-                        v2 = set(v2)
-                    if v1 != v2:
-                        logger.debug('Different {} {}: {} != {}'.format(path, k, v1, v2))
-                        self.cache_context(path, localcontext)
-                        break
-                else:                         # dit not break
-                    return
+            cached_context = self.get_cached_data(path, {})
+            for k, v1 in cached_context.items():
+                v2 = localcontext[k]
+                if k == 'tag_pool':
+                    v1 = set(v1)
+                    v2 = set(v2)
+                if v1 != v2:
+                    logger.debug('Different {} {}: {} != {}'.format(path, k, v1, v2))
+                    self.cache_data(path, localcontext)
+                    break
+            else:                         # dit not break
+                return
 
             old_locale = locale.setlocale(locale.LC_ALL)
             locale.setlocale(locale.LC_ALL, str('C'))

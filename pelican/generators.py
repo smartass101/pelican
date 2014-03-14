@@ -20,14 +20,15 @@ from jinja2 import (Environment, FileSystemLoader, PrefixLoader, ChoiceLoader,
 
 from pelican.contents import Article, Draft, Page, Static, is_valid_content
 from pelican.readers import Readers
-from pelican.utils import copy, process_translations, mkdir_p, DateFormatter, CacheManager
+from pelican.utils import (copy, process_translations, mkdir_p, DateFormatter,
+                           FileStampDataCacher)
 from pelican import signals
 
 
 logger = logging.getLogger(__name__)
 
 
-class Generator(CacheManager):
+class Generator(FileStampDataCacher):
     """Baseclass generator"""
 
     def __init__(self, context, settings, path, theme, output_path, **kwargs):
@@ -72,6 +73,9 @@ class Generator(CacheManager):
         # get custom Jinja filters from user settings
         custom_filters = self.settings['JINJA_FILTERS']
         self.env.filters.update(custom_filters)
+
+        # set up caching
+        super(Generator, self).__init__(settings, 'CACHE_CONTENT')
 
         signals.generator_init.send(self)
 
@@ -193,7 +197,6 @@ class ArticlesGenerator(Generator):
         self.drafts = [] # only drafts in default language
         self.drafts_translations = []
         super(ArticlesGenerator, self).__init__(*args, **kwargs)
-        self.load_cache('articles_generator')
         signals.article_generator_init.send(self)
 
     def generate_feeds(self, writer):
@@ -409,7 +412,7 @@ class ArticlesGenerator(Generator):
         for f in self.get_files(
                 self.settings['ARTICLE_DIR'],
                 exclude=self.settings['ARTICLE_EXCLUDES']):
-            article = self.get_content_if_unmodified(f)
+            article = self.get_cached_data(f, None)
             if article is None:
                 try:
                     article = self.readers.read_file(
@@ -426,7 +429,7 @@ class ArticlesGenerator(Generator):
                 if not is_valid_content(article, f):
                     continue
 
-                self.cache_content(f, article)
+                self.cache_data(f, article)
 
             self.add_source_path(article)
 
