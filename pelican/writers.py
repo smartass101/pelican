@@ -163,7 +163,8 @@ class Writer(FileDataCacher):
                     self.cache_data(path, localcontext)
                     break
             else:                         # dit not break
-                return
+                if cached_context != {}:
+                    return
 
             old_locale = locale.setlocale(locale.LC_ALL)
             locale.setlocale(locale.LC_ALL, str('C'))
