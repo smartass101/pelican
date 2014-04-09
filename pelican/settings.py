@@ -117,7 +117,8 @@ DEFAULT_CONFIG = {
     'SLUG_SUBSTITUTIONS': (),
     'INTRASITE_LINK_REGEX': '[{|](?P<what>.*?)[|}]',
     'SLUGIFY_SOURCE': 'title',
-    'GENERATOR_PARALLEL_WORKERS': 1,
+    'PARALLEL_JOBS': 1,
+    'PARALLEL_POOL_CLASS': 'multiprocessing.pool.Pool',
     }
 
 PYGMENTS_RST_OPTIONS = None

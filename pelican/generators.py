@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, print_function
+import six
 
 import os
 import math
@@ -15,7 +16,6 @@ from functools import partial
 from itertools import chain, groupby
 from operator import attrgetter, itemgetter
 from multiprocessing import cpu_count
-from multiprocessing.pool import ThreadPool
 
 from jinja2 import (Environment, FileSystemLoader, PrefixLoader, ChoiceLoader,
                     BaseLoader, TemplateNotFound)
@@ -74,6 +74,20 @@ class Generator(object):
         # get custom Jinja filters from user settings
         custom_filters = self.settings['JINJA_FILTERS']
         self.env.filters.update(custom_filters)
+
+        # set up parallel io implementation
+        self._parallel_jobs = self.settings['PARALLEL_JOBS']
+        if self._parallel_jobs != 1:
+            self._parallel_pool_cls = self.settings['PARALLEL_POOL_CLASS']
+            if isinstance(self._parallel_pool_cls, six.string_types):
+                module, cls_name = self._parallel_pool_cls.rsplit('.', 1)
+                try:
+                    module = __import__(module)
+                    self._parallel_pool_cls = getattr(module, cls_name)
+                except (ImportError, AttributeError):
+                    self._parallel_pool_cls = None
+            if self._parallel_pool_cls is not None and self._parallel_jobs == 0:
+                self._parallel_jobs = cpu_count()
 
         signals.generator_init.send(self)
 
@@ -157,12 +171,11 @@ class Generator(object):
         :meth:`multirpocessing.pool.Pool.map`
         else uses the standard map function
         """
-        workers = self.settings['GENERATOR_PARALLEL_WORKERS']
-        if workers == 1:
+        if self._parallel_jobs == 1 or self._parallel_pool_cls is None:
             return map(func, iterable)
         else:
-            workers = cpu_count() if workers == 0 else workers
-            worker_pool = ThreadPool(processes=workers)
+            worker_pool = self._parallel_pool_cls(
+                processes=self._parallel_jobs)
             return worker_pool.map(func, iterable)
 
 

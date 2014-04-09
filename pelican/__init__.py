@@ -257,6 +257,9 @@ def parse_arguments():
                         action='store_true',
                         help='Relaunch pelican each time a modification occurs'
                         ' on the content files.')
+    parser.add_argument('-j', '--jobs', dest='jobs',
+                        type=int, default=None,
+                        help='Number of generation related jobs to run in parallel')
     return parser.parse_args()
 
 
@@ -272,6 +275,9 @@ def get_config(args):
         config['THEME'] = abstheme if os.path.exists(abstheme) else args.theme
     if args.delete_outputdir is not None:
         config['DELETE_OUTPUT_DIRECTORY'] = args.delete_outputdir
+    if args.jobs is not None:
+        config['PARALLEL_JOBS'] = args.jobs
+    
 
     # argparse returns bytes in Py2. There is no definite answer as to which
     # encoding argparse (or sys.argv) uses.
