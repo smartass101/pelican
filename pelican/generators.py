@@ -172,7 +172,10 @@ class Generator(object):
         else uses the standard map function
         """
         if self._parallel_jobs == 1 or self._parallel_pool_cls is None:
-            return map(func, iterable)
+            ret = map(func, iterable)
+            if not isinstance(ret, list):
+                ret = list(ret)   #py3k: evaluate lazy map object 
+            return ret
         else:
             worker_pool = self._parallel_pool_cls(
                 processes=self._parallel_jobs)
