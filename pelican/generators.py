@@ -29,6 +29,14 @@ from pelican import signals
 logger = logging.getLogger(__name__)
 
 
+# workaround for multiprocessing pickling
+# only importable functions can be pickled
+_parallel_function_slot = None
+
+def _execute_parallel_function(item):
+    return _parallel_function_slot(item)
+
+
 class Generator(object):
     """Baseclass generator"""
 
@@ -167,8 +175,8 @@ class Generator(object):
     def map(self, func, iterable):
         """A modified map function that can map in parallel
 
-        if configured to process in parallel, uses
-        :meth:`multirpocessing.pool.Pool.map`
+        if configured to process in parallel, uses the map method
+        of a PARALLEL_POOL_CLASS instance
         else uses the standard map function
         """
         if self._parallel_jobs == 1 or self._parallel_pool_cls is None:
@@ -177,9 +185,11 @@ class Generator(object):
                 ret = list(ret)   #py3k: evaluate lazy map object 
             return ret
         else:
+            global _parallel_function_slot
+            _parallel_function_slot = func
             worker_pool = self._parallel_pool_cls(
                 processes=self._parallel_jobs)
-            return worker_pool.map(func, iterable)
+            return worker_pool.map(_execute_parallel_function, iterable)
 
 
 class _FileLoader(BaseLoader):
