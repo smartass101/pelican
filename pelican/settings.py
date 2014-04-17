@@ -125,6 +125,7 @@ DEFAULT_CONFIG = {
     'GZIP_CACHE': True,
     'CHECK_MODIFIED_METHOD': 'mtime',
     'LOAD_CONTENT_CACHE': True,
+    'WRITE_ONLY_SELECTED': [],
     }
 
 PYGMENTS_RST_OPTIONS = None

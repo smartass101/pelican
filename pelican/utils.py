@@ -658,3 +658,14 @@ class FileStampDataCacher(FileDataCacher):
         if stamp != self._get_file_stamp(filename):
             return default
         return data
+
+
+def is_selected_for_writing(settings, path):
+    '''Check whether path is selected for writing
+    according to the WRITE_ONLY_SELECTED list
+
+    If WRITE_ONLY_SELECTED is an empty list (default),
+    any path is selected for writing.
+    '''
+    return settings['WRITE_ONLY_SELECTED'] and\
+        path in settings['WRITE_ONLY_SELECTED']

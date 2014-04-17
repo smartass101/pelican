@@ -16,7 +16,8 @@ from feedgenerator import Atom1Feed, Rss201rev2Feed
 from jinja2 import Markup
 
 from pelican.paginator import Paginator
-from pelican.utils import get_relative_path, path_to_url, set_date_tzinfo
+from pelican.utils import (get_relative_path, path_to_url, set_date_tzinfo,
+                           is_selected_for_writing)
 from pelican import signals
 
 logger = logging.getLogger(__name__)
@@ -92,6 +93,8 @@ class Writer(object):
         :param path: the path to output.
         :param feed_type: the feed type to use (atom or rss)
         """
+        if not is_selected_for_writing(self.settings, path):
+            return
         old_locale = locale.setlocale(locale.LC_ALL)
         locale.setlocale(locale.LC_ALL, str('C'))
         try:
@@ -148,13 +151,15 @@ class Writer(object):
 
         def _write_file(template, localcontext, output_path, name, override):
             """Render the template write the file."""
+            path = os.path.join(output_path, name)
+            if not is_selected_for_writing(self.settings, path):
+                return
             old_locale = locale.setlocale(locale.LC_ALL)
             locale.setlocale(locale.LC_ALL, str('C'))
             try:
                 output = template.render(localcontext)
             finally:
                 locale.setlocale(locale.LC_ALL, old_locale)
-            path = os.path.join(output_path, name)
             try:
                 os.makedirs(os.path.dirname(path))
             except Exception:
