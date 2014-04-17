@@ -143,7 +143,9 @@ class Writer(object):
         :param **kwargs: additional variables to pass to the templates
         """
 
-        if name is False or name == "":
+        if name is False or name == "" or\
+           not is_selected_for_writing(self.settings,\
+               os.path.join(self.output_path, name)):
             return
         elif not name:
             # other stuff, just return for now
@@ -151,15 +153,13 @@ class Writer(object):
 
         def _write_file(template, localcontext, output_path, name, override):
             """Render the template write the file."""
-            path = os.path.join(output_path, name)
-            if not is_selected_for_writing(self.settings, path):
-                return
             old_locale = locale.setlocale(locale.LC_ALL)
             locale.setlocale(locale.LC_ALL, str('C'))
             try:
                 output = template.render(localcontext)
             finally:
                 locale.setlocale(locale.LC_ALL, old_locale)
+            path = os.path.join(output_path, name)
             try:
                 os.makedirs(os.path.dirname(path))
             except Exception:
