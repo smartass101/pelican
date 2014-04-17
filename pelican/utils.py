@@ -667,5 +667,8 @@ def is_selected_for_writing(settings, path):
     If WRITE_ONLY_SELECTED is an empty list (default),
     any path is selected for writing.
     '''
-    return settings['WRITE_ONLY_SELECTED'] and\
-        path in settings['WRITE_ONLY_SELECTED']
+    if settings['WRITE_ONLY_SELECTED']:
+        return path in settings['WRITE_ONLY_SELECTED']
+    else:
+        return True
+        

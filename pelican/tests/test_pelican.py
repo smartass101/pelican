@@ -152,7 +152,11 @@ class TestPelican(LoggedTestCase):
             'LOCALE': locale.normalize('en_US'),
             })
         pelican = Pelican(settings=settings)
-        mute(True)(pelican.run)()         # second run
+        logger = logging.getLogger()
+        orig_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.INFO)
+        mute(True)(pelican.run)()
+        logger.setLevel(orig_level)
         self.assertLogCountEqual(
             count=2,
             msg="writing .*",
